@@ -1,0 +1,25 @@
+
+These are the priority questions we are trying to answer
+These are the analysis approaches we are taking to answer them
+This is you task for the next week
+Where to start
+What data
+What does results look like
+What does done look like
+
+
+# python setup
+
+# using pandas
+- loading files
+- viewing files
+- merging tables
+
+# making calculations
+- averages
+- summations
+- working with tables
+
+# word analysis
+- break into n-grams
+- cleaning of common words (get rid of the ones that appear too often)
