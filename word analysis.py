@@ -1,5 +1,7 @@
 import pandas as pd
 import re
+from gensim.parsing.preprocessing import STOPWORDS
+from gensim import models
 
 # load in the data
 data = pd.read_csv('data/response_data.csv')
@@ -17,7 +19,8 @@ word_list = [re.split(' ', response) for response in response_list]
 # clean up spaces and unwanted words
 word_list_clean = []
 for _list in word_list:
-    _list_clean = [l.lower() for l in _list if l not in ['','of', 'in', 'and', 'the', 'also', 'is', 'a', 'I', 'are']]
+    _list_clean = [l.lower() for l in _list if l not in STOPWORDS]
+    _list_clean = [l for l in _list_clean if l!='']
     word_list_clean.append(_list_clean)
 
 # generate n-grams
@@ -29,12 +32,15 @@ print find_ngrams(['there', 'fewer', 'opportunities'], 2)
 print find_ngrams(['there', 'fewer', 'opportunities'], 3)
 
 # generate n-grams and tabulate
-n_gram_list = []
+document_list = []
 for list_clean in word_list_clean:
-    n_gram_list.extend(find_ngrams(list_clean, 1))
-    n_gram_list.extend(find_ngrams(list_clean, 2))
-    n_gram_list.extend(find_ngrams(list_clean, 3))
+    document_list.append(find_ngrams(list_clean, 1))
+    document_list.append(find_ngrams(list_clean, 2))
+    document_list.append(find_ngrams(list_clean, 3))
 
+print document_list
+
+n_gram_list = [item for sublist in document_list for item in sublist]
 n_gram_list = [' '.join(l) for l in n_gram_list]
 
 n_gram_counts = []
@@ -52,3 +58,20 @@ n_gram_count_df.to_csv('data/n_grams.csv')
 # topic modeling groups the responses into similar categories ...
 # Each category calculated using the n-grams they have in common
 # ex: lack of community support, tech field stereotypes, male at the work place, etc.
+
+# convert bag of words into sparse vector corpus
+unique_ngrams = n_gram_count_df['ngram'].tolist()
+
+corpus = []
+for document in document_list:
+    document = [' '.join(w) for w in document]
+    vector = []
+    for ngram in document:
+        vector.append((unique_ngrams.index(ngram),document.count(ngram)))
+    corpus.append(vector)
+
+# tfidf transformation
+# takes documents represented as bag-of-words counts and applies a weighting which ...
+# discounts common terms and promotes the rare terms
+# common terms like "I, likely, also, think" contained less information than "confidence, support, lack"
+tfidf = models.TfidfModel(corpus)
