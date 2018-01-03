@@ -10,6 +10,8 @@
 - summations
 - working with tables
 
-# word analysis
-- break into n-grams
-- cleaning of common words (get rid of the ones that appear too often)
+# basic nlp
+- stopwords
+- bag of words
+- sparse vector transformation
+- gensim tfidf
