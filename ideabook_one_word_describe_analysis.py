@@ -4,10 +4,12 @@ import string, re
 
 
 """
-INTECH RESPONSES
+INTECH 
 """
 df = pd.read_csv('private_data/intech_data.csv')
 df.columns = list(string.ascii_uppercase)[:len(df.columns)]+['unnamed']
+
+
 
 df['word'] = [re.sub(' ', '', w.lower()) if str(w)!='nan' else '' for w in df['R']]
 df_small = df[df['word'].isin(['challenge','challenging','challenges'])]['S'].tolist()
