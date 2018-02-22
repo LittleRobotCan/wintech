@@ -1,69 +1,58 @@
-if __name__ == '__main__':
-    import pandas as pd
-    df = pd.read_csv('private_data/one_word_describe.csv')
-    word_clean = []
-    color_clean = []
-    for index, row in df.iterrows():
-        word_clean.append(row['Word'].lower())
-        color_clean.append(row['Colour'].lower())
-    df['color_clean'] = color_clean
-    df['word_clean'] = word_clean
+import pandas as pd
+import string, re
 
-    from collections import Counter
-    positive = Counter(df[df['color_clean'].isin(["red"])]['word_clean'].tolist())
-    negative = Counter(df[df['color_clean'].isin(["green"])]['word_clean'].tolist())
-    positive_p = Counter(df[df['color_clean'].isin(["yellow"])]['word_clean'].tolist())
-    negative_p = Counter(df[df['color_clean'].isin(["blue"])]['word_clean'].tolist())
+"""
+word to describe their experience vs what they thought??? can't find in ideabook???
+"""
 
-    for k, v in positive.most_common(5):
-        print '%s: %i' % (k, v)
-    for k, v in negative.most_common(5):
-        print '%s: %i' % (k,v)
+df = pd.read_csv('private_data/sentiment_one_word_describe.csv')
+df = df[['word','sentiment']]
 
+"""
+INTECH
+"""
+df_intech = pd.read_csv('private_data/intech_data.csv')
+df_intech.columns = list(string.ascii_uppercase)[:len(df_intech.columns)]+['unnamed']
 
-    for k, v in positive_p.most_common(5):
-        print '%s: %i' % (k, v)
-    for k, v in negative_p.most_common(5):
-        print '%s: %i' % (k,v)
-    """
-    sentiment labels seem off. half of "growing" labeled positive and the other half labeled negative
-    """
+words = [str(i).lower() for i in df_intech['R'] if str(i) not in ['nan', ''] and len(str(i))<50]
 
+words = [re.split(',| |\\|',w) for w in words]
+words = [item for sublist in words for item in sublist]
+words_count = [[w, words.count(w)] for w in set(words)]
 
-    industry_all = Counter(df[df['color_clean'].isin(["red","green"])]['word_clean'].tolist())
-    personal_all = Counter(df[df['color_clean'].isin(["yellow","blue"])]['word_clean'].tolist())
+sentiment_dict = {}
+for index, row in df.iterrows():
+    sentiment_dict[row['word']] = row['sentiment']
 
-    for k, v in industry_all.most_common(15):
-        print '%s: %i' % (k, v)
-    for k, v in personal_all.most_common(15):
-        print '%s: %i' % (k,v)
-
-    output = []
-    for k, v in industry_all.most_common(len(industry_all)):
-        output.append([k,v,"industry"])
-    for k, v in personal_all.most_common(len(personal_all)):
-        output.append([k,v,"personal"])
-    output_df = pd.DataFrame(output, columns = ["word","count", "category"])
-    output_df.to_csv("private_data/processed_one_word_describe.csv")
-
-    # ======================================================================= #
-
-    # load the csv files
-    labeled_df = pd.read_csv("private_data/processed_one_word_describe.csv", index_col=0)
-    print sum(labeled_df[(labeled_df['category']=="industry")&(labeled_df['sentiment']=="p")]["count"])
-    # 454
-    print sum(labeled_df[(labeled_df['category']=="industry")&(labeled_df['sentiment']=="-")]["count"])
-    #207
-
-    print sum(labeled_df[(labeled_df['category'] == "personal") & (labeled_df['sentiment'] == "p")]["count"])
-    #374
-    print sum(labeled_df[(labeled_df['category'] == "personal") & (labeled_df['sentiment'] == "-")]["count"])
-    #241
+for row in words_count:
+    if row[0] in sentiment_dict:
+        row.append(sentiment_dict[row[0]])
+    else:
+        row.append('')
+output = pd.DataFrame(words_count)
+output.to_csv('private_data/intech_stakeholder_sentiments/intech.csv')
 
 
-    labeled_df = labeled_df.sort_values(by="count", ascending=False)
-    labeled_df[(labeled_df['category']=="industry")&(labeled_df['sentiment']=="p")][:10]
-    labeled_df[(labeled_df['category'] == "industry") & (labeled_df['sentiment'] == "-")][:20]
+"""
+STAKEHOLDER
+"""
+df_intech = pd.read_csv('private_data/stakeholder_data.csv')
+df_intech.columns = list(string.ascii_uppercase)[:len(df_intech.columns)]+['unnamed']
 
-    labeled_df[(labeled_df['category']=="personal")&(labeled_df['sentiment']=="p")][:10]
-    labeled_df[(labeled_df['category'] == "personal") & (labeled_df['sentiment'] == "-")][:20]
+words = [str(i).lower() for i in df_intech['R'] if str(i) not in ['nan', ''] and len(str(i))<50]
+
+words = [re.split(',| |\\|',w) for w in words]
+words = [item for sublist in words for item in sublist]
+words_count = [[w, words.count(w)] for w in set(words)]
+
+sentiment_dict = {}
+for index, row in df.iterrows():
+    sentiment_dict[row['word']] = row['sentiment']
+
+for row in words_count:
+    if row[0] in sentiment_dict:
+        row.append(sentiment_dict[row[0]])
+    else:
+        row.append('')
+output = pd.DataFrame(words_count)
+output.to_csv('private_data/intech_stakeholder_sentiments/stakeholder.csv')
