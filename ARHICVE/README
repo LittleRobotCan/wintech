@@ -12,3 +12,6 @@
 - bag of words
 - sparse vector transformation
 - gensim tfidf
+
+# starting a git repo
+http://kbroman.org/github_tutorial/pages/init.html
