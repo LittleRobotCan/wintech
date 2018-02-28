@@ -1,23 +1,46 @@
 import pandas as pd
-from sklearn.cluster import KMeans
-import numpy as np
-from gensim import corpora, models
-import re, string
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+import re
 
 df = pd.read_csv('private_data/recommendation_keywords.csv', header = None)
 df.columns = ['keywords','location']
 df = df.dropna()
 
 keywords = df['keywords'].tolist()
-keywords = [re.split(' ', k.lower()) for k in keywords]
-keywords = [item for sublist in keywords for item in sublist]
-keywords = [k for k in keywords if len(k)>2 and k not in ['for','and','the']]
+keywords = [word_tokenize(k.lower()) for k in keywords]
+keywords_sets = [set(sublist) for sublist in keywords]
+keywords = [item for sublist in keywords_sets for item in sublist]
+keywords = [k for k in keywords if len(k)>2 and k not in ['for','and','the','in','of','to','up']]
 
-keyword_counts = [(k, keywords.count(k)) for k in set(keywords)]
-sorted(keyword_counts, key=lambda x: x[1])
+# stem the keywords
+ps= PorterStemmer()
+keywords_stem = [(ps.stem(w),w) for w in keywords]
 
-output = pd.DataFrame(keyword_counts, columns=['keywords','counts'])
-output.to_csv('private_data/intech_recommendation/keywords_ranked.csv')
+# collect and count the stems
+stems = [i[0] for i in keywords_stem]
+stem_counts = [(s, stems.count(s)) for s in set(stems)]
+stem_counts_sorted = sorted(stem_counts, key=lambda x: x[1], reverse=True)
+
+# create a stem to keyword dictionary
+stem_keyword_dict = dict()
+for item in keywords_stem:
+  stem, keyword = item
+  if stem in stem_keyword_dict:
+    stem_keyword_dict[stem].add(keyword)
+  else:
+    stem_keyword_dict[stem] = set([keyword])
+
+output = list()
+for item in stem_counts_sorted:
+  stem, c = item
+  keywords = ', '.join(stem_keyword_dict[stem])
+  output.append([stem, c, keywords])
+
+output_df = pd.DataFrame(output, columns=['stem', 'counts', 'keywords'])
+output_df.to_csv('private_data/intech_recommendation/keywords_ranked_clean.csv')
+
+
 
 # ngrams
 keywords = df['keywords'].tolist()
