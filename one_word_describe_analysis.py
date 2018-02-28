@@ -1,36 +1,53 @@
 import pandas as pd
-import string, re
+import string
+from nltk.stem import PorterStemmer
+ps= PorterStemmer()
+from nltk.tokenize import word_tokenize
 
 """
 word to describe their experience vs what they thought??? can't find in ideabook???
 """
 
-df = pd.read_csv('private_data/sentiment_one_word_describe.csv')
-df = df[['word','sentiment']]
+#df = pd.read_csv('private_data/sentiment_one_word_describe.csv')
+#df = df[['word','sentiment']]
 
 """
 INTECH
 """
 df_intech = pd.read_csv('private_data/intech_data.csv')
-df_intech.columns = list(string.ascii_uppercase)[:len(df_intech.columns)]+['unnamed']
+df_intech.columns = list(string.ascii_uppercase)[:len(df_intech.columns)]
 
 words = [str(i).lower() for i in df_intech['R'] if str(i) not in ['nan', ''] and len(str(i))<50]
 
-words = [re.split(',| |\\|',w) for w in words]
-words = [item for sublist in words for item in sublist]
-words_count = [[w, words.count(w)] for w in set(words)]
+keywords = [word_tokenize(k.lower()) for k in words]
+keywords = [item for sublist in keywords for item in sublist]
+keywords = [k for k in keywords if len(k)>2 and k not in ['for','and','the','in','of','to','up']]
 
-sentiment_dict = {}
-for index, row in df.iterrows():
-    sentiment_dict[row['word']] = row['sentiment']
+# stem the keywords
+keywords_stem = [(ps.stem(w),w) for w in keywords]
 
-for row in words_count:
-    if row[0] in sentiment_dict:
-        row.append(sentiment_dict[row[0]])
-    else:
-        row.append('')
-output = pd.DataFrame(words_count)
-output.to_csv('private_data/intech_stakeholder_sentiments/intech.csv')
+# collect and count the stems
+stems = [i[0] for i in keywords_stem]
+stem_counts = [(s, stems.count(s)) for s in set(stems)]
+stem_counts_sorted = sorted(stem_counts, key=lambda x: x[1], reverse=True)
+
+# create a stem to keyword dictionary
+stem_keyword_dict = dict()
+for item in keywords_stem:
+  stem, keyword = item
+  if stem in stem_keyword_dict:
+    stem_keyword_dict[stem].add(keyword)
+  else:
+    stem_keyword_dict[stem] = set([keyword])
+
+output = list()
+for item in stem_counts_sorted:
+  stem, c = item
+  keywords = ', '.join(stem_keyword_dict[stem])
+  output.append([stem, c, keywords])
+
+output_df = pd.DataFrame(output, columns=['stem', 'counts', 'keywords'])
+output_df.to_csv('private_data/one_word_intech_stakeholder/intech_stemmed.csv')
 
 
 """
@@ -41,18 +58,32 @@ df_intech.columns = list(string.ascii_uppercase)[:len(df_intech.columns)]+['unna
 
 words = [str(i).lower() for i in df_intech['R'] if str(i) not in ['nan', ''] and len(str(i))<50]
 
-words = [re.split(',| |\\|',w) for w in words]
-words = [item for sublist in words for item in sublist]
-words_count = [[w, words.count(w)] for w in set(words)]
+keywords = [word_tokenize(k.lower()) for k in words]
+keywords = [item for sublist in keywords for item in sublist]
+keywords = [k for k in keywords if len(k)>2 and k not in ['for','and','the','in','of','to','up']]
 
-sentiment_dict = {}
-for index, row in df.iterrows():
-    sentiment_dict[row['word']] = row['sentiment']
+# stem the keywords
+keywords_stem = [(ps.stem(w),w) for w in keywords]
 
-for row in words_count:
-    if row[0] in sentiment_dict:
-        row.append(sentiment_dict[row[0]])
-    else:
-        row.append('')
-output = pd.DataFrame(words_count)
-output.to_csv('private_data/intech_stakeholder_sentiments/stakeholder.csv')
+# collect and count the stems
+stems = [i[0] for i in keywords_stem]
+stem_counts = [(s, stems.count(s)) for s in set(stems)]
+stem_counts_sorted = sorted(stem_counts, key=lambda x: x[1], reverse=True)
+
+# create a stem to keyword dictionary
+stem_keyword_dict = dict()
+for item in keywords_stem:
+  stem, keyword = item
+  if stem in stem_keyword_dict:
+    stem_keyword_dict[stem].add(keyword)
+  else:
+    stem_keyword_dict[stem] = set([keyword])
+
+output = list()
+for item in stem_counts_sorted:
+  stem, c = item
+  keywords = ', '.join(stem_keyword_dict[stem])
+  output.append([stem, c, keywords])
+
+output_df = pd.DataFrame(output, columns=['stem', 'counts', 'keywords'])
+output_df.to_csv('private_data/one_word_intech_stakeholder/stakeholder_stemmed.csv')
