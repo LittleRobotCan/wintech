@@ -1,5 +1,6 @@
 import pandas as pd
 from nltk.stem import PorterStemmer
+ps= PorterStemmer()
 from nltk.tokenize import word_tokenize
 import re
 
@@ -7,6 +8,7 @@ df = pd.read_csv('private_data/recommendation_keywords.csv', header = None)
 df.columns = ['keywords','location']
 df = df.dropna()
 
+# find unigrams
 keywords = df['keywords'].tolist()
 keywords = [word_tokenize(k.lower()) for k in keywords]
 keywords_sets = [set(sublist) for sublist in keywords]
@@ -14,7 +16,6 @@ keywords = [item for sublist in keywords_sets for item in sublist]
 keywords = [k for k in keywords if len(k)>2 and k not in ['for','and','the','in','of','to','up']]
 
 # stem the keywords
-ps= PorterStemmer()
 keywords_stem = [(ps.stem(w),w) for w in keywords]
 
 # collect and count the stems
@@ -42,14 +43,18 @@ output_df.to_csv('private_data/intech_recommendation/keywords_ranked_clean.csv')
 
 
 
-# ngrams
+# find ngrams
 keywords = df['keywords'].tolist()
 keywords = [re.split(' ', k.lower()) for k in keywords]
+keywords_stemmed = list()
+for item in keywords:
+  item_stemmed = [ps.stem(w) for w in item]
+  keywords_stemmed.append(item_stemmed)
 def find_ngrams(input_list, n):
   return zip(*[input_list[i:] for i in range(n)])
 
-bigrams = [find_ngrams(item, 2) for item in keywords if len(item)>1]
-trigrams = [find_ngrams(item, 3) for item in keywords if len(item)>2]
+bigrams = [find_ngrams(item, 2) for item in keywords_stemmed if len(item)>1]
+trigrams = [find_ngrams(item, 3) for item in keywords_stemmed if len(item)>2]
 
 bigrams = [item for sublist in bigrams for item in sublist]
 trigrams = [item for sublist in trigrams for item in sublist]
@@ -59,4 +64,4 @@ ngrams = [' '.join(list(n)) for n in ngrams]
 
 ngrams_count = [(n, ngrams.count(n)) for n in set(ngrams)]
 output = pd.DataFrame(ngrams_count, columns=['ngrams','counts'])
-output.to_csv('private_data/intech_recommendation/ngrams_ranked.csv')
+output.to_csv('private_data/intech_recommendation/ngrams_ranked_clean.csv')
